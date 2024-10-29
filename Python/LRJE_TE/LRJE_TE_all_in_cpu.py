@@ -6,7 +6,7 @@ import matplotlib.pyplot as plt
 # 设置字体以支持中文显示
 plt.rcParams['font.sans-serif'] = ['SimHei']  # 使用黑体
 plt.rcParams['axes.unicode_minus'] = False  # 解决负号显示问题
-
+#11111111111111111111111111111111111111111111111111
 # 载入.mat文件
 data = scipy.io.loadmat('TE_data.mat')  # 替换为实际的文件路径
 print("成功加载 .mat 文件。")
