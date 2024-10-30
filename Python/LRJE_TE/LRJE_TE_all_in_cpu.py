@@ -1,36 +1,30 @@
 import numpy as np
 import scipy.io
+from PyQt5.sip import array
 from sklearn.metrics import pairwise_distances
 from scipy.sparse import csr_matrix
-import matplotlib.pyplot as plt
+import matplotlib
+
 # 设置字体以支持中文显示
-plt.rcParams['font.sans-serif'] = ['SimHei']  # 使用黑体
-plt.rcParams['axes.unicode_minus'] = False  # 解决负号显示问题
-#11111111111111111111111111111111111111111111111111
-# 载入.mat文件
-data = scipy.io.loadmat('TE_data.mat')  # 替换为实际的文件路径
-print("成功加载 .mat 文件。")
+matplotlib.rcParams['font.sans-serif'] = ['SimHei']  # 使用黑体
+matplotlib.rcParams['axes.unicode_minus'] = False  # 解决负号显示问题
 
-# 选择训练数据和测试数据
-X_train = data['d00_te'].T  # 训练数据，通常用于训练模型
-X_test = data['d01_te'].T  # 测试数据，用于验证模型效果
-print("成功选择训练和测试数据。")
+# 加载数据
+data = scipy.io.loadmat('TE_data.mat')
+data = list(data.values())[3:] # 将数据转换为列表
 
-# 标准化训练数据
-def standardize_data(X):
-    """
-    标准化数据
-    X: 输入数据
-    返回标准化数据以及平均值和标准差
-    """
-    mean_X = np.mean(X, axis=0)
-    std_X = np.std(X, axis=0)
-    X_std = (X - mean_X) / std_X
-    print("数据标准化完成。")
-    print(f"训练数据的维度为：{X_train.shape}")
-    return X_std, mean_X, std_X
+# 分离训练数据和测试数据
+testdata = data[:22]  # 前22个元素作为测试数据
+train = np.array(data[22]) if len(data) > 22 else np.array(data[-1])  # 第23个元素作为训练数据，如果不存在则使用最后一个元素
+#train = train.T  # 转置训练数据
 
-X_train_std, mean_X_train, std_X_train = standardize_data(X_train)
+# 计算训练数据的均值和标准差
+train_mean = np.mean(train, axis=0)  # 按列计算均值
+train_std = np.std(train, axis=0)  # 按列计算标准差
+train_row, train_col = train.shape  # 获取训练数据的行数和列数
+print("训练数据的维度为：", train_row, train_col)
+#对数据进行标准化
+X_train_std = (train - train_mean) / train_std
 
 # 实现奇异值阈值化操作
 def singular_value_thresholding(A, tau):
@@ -149,7 +143,7 @@ def update_Y_and_mu(Y1, Y2, mu, X, Z, E, Q, rho, mu_max):
     return Y1_new, Y2_new, mu_new
 
 # LRJE 方法
-def lrje(X, alpha, beta, gamma, rho=1.1, mu_max=1e6, max_iter=5, eps=1e-3):
+def lrje(X, alpha, beta, gamma, rho=1.1, mu_max=1e6, max_iter=50, eps=1e-3):
     m, n = X.shape
     Z = Q = np.zeros((n, n))
     E= np.zeros((m, n))
@@ -196,53 +190,62 @@ Lambda_inv = np.linalg.inv(Lambda)
 print("协方差矩阵及其逆计算完成。")
 
 # 处理新样本
-def process_new_sample(X_new, P, Lambda_inv):
-    """
-    处理新的样本，T^2 和 SPE 统计量
-    """
-    # 标准化新数据
-    mean_X_new = np.mean(X_new, axis=0)
-    std_X_new = np.std(X_new, axis=0)
-    X_new_std = (X_new - mean_X_new) / std_X_new
-    print(f"新数据标准化完成，使用新数据的平均值和标准差，标准化后的维度为：{X_new_std.shape}")
-    # 投影到特征空间
-    Y_new = P.T @ X_new_std
-    print(f"新数据投影到特征空间完成，投影后的维度为：{Y_new.shape}")
-    # 重构特征部分
-    X_hat_new = P @ Y_new
-    print(f"新数据的特征部分重构完成，重构后的维度为：{X_hat_new.shape}")
-    # 残差部分
-    X_tilde_new = X_new_std - X_hat_new
-    print(f"新数据的残差部分计算完成，残差的维度为：{X_tilde_new.shape}")
+for i in range(22):
+    test=np.array(testdata[i])
+    n=test.shape[0]
 
-    # 计算 T^2 和 SPE 统计量
+    test= (test -train_mean) / train_std
+    test=test.T
+    y_new=P.T@test
 
-    # T2
-    n_y_new= Y_new.shape[0]
-    T2 = np.zeros(n_y_new)
-    for i in range(n_y_new):
-        T2[i] = Y_new[i,:].T@Lambda_inv@Y_new[i,:]
-    # 绘制 T^2 统计量的折线图
-    plt.figure(1)
-    plt.subplot(2, 1, 1)
-    plt.plot(range(1, n_y_new+ 1), T2)
-    plt.title('主成分分析统计量T2')
-    plt.xlabel('采样数')
-    plt.ylabel('T^2')
 
-    # SPE
-    n_X_tilde_new= X_tilde_new.shape[0]
-    SPE = np.zeros(n_X_tilde_new)
-    for i in range(n_X_tilde_new):
-        SPE[i] = np.sum(X_tilde_new[i,:]**2)
-    # 绘制 SPE 统计量的折线图
-    plt.subplot(2, 1, 2)
-    plt.plot(range(1, n_X_tilde_new+ 1), SPE)
-    plt.title('主成分分析统计量SPE')
-    plt.xlabel('采样数')
-    plt.ylabel('SPE')
-# 假设 X_new 是新的观测数据
-print("处理新的测试样本。")
-process_new_sample(X_test, P, Lambda_inv)
-plt.show()
+# def process_new_sample(X_new, P, Lambda_inv):
+#     """
+#     处理新的样本，T^2 和 SPE 统计量
+#     """
+#     # 标准化新数据
+#     mean_X_new = np.mean(X_new, axis=0)
+#     std_X_new = np.std(X_new, axis=0)
+#     X_new_std = (X_new - mean_X_new) / std_X_new
+#     print(f"新数据标准化完成，使用新数据的平均值和标准差，标准化后的维度为：{X_new_std.shape}")
+#     # 投影到特征空间
+#     Y_new = P.T @ X_new_std
+#     print(f"新数据投影到特征空间完成，投影后的维度为：{Y_new.shape}")
+#     # 重构特征部分
+#     X_hat_new = P @ Y_new
+#     print(f"新数据的特征部分重构完成，重构后的维度为：{X_hat_new.shape}")
+#     # 残差部分
+#     X_tilde_new = X_new_std - X_hat_new
+#     print(f"新数据的残差部分计算完成，残差的维度为：{X_tilde_new.shape}")
+#
+#     # 计算 T^2 和 SPE 统计量
+#
+#     # T2
+#     n_y_new= Y_new.shape[0]
+#     T2 = np.zeros(n_y_new)
+#     for i in range(n_y_new):
+#         T2[i] = Y_new[i,:].T@Lambda_inv@Y_new[i,:]
+#     # 绘制 T^2 统计量的折线图
+#     matplotlib.figure(1)
+#     matplotlib.subplot(2, 1, 1)
+#     matplotlib.plot(range(1, n_y_new+ 1), T2)
+#     matplotlib.title('主成分分析统计量T2')
+#     matplotlib.xlabel('采样数')
+#     matplotlib.ylabel('T^2')
+#
+#     # SPE
+#     n_X_tilde_new= X_tilde_new.shape[0]
+#     SPE = np.zeros(n_X_tilde_new)
+#     for i in range(n_X_tilde_new):
+#         SPE[i] = np.sum(X_tilde_new[i,:]**2)
+#     # 绘制 SPE 统计量的折线图
+#     matplotlib.subplot(2, 1, 2)
+#     matplotlib.plot(range(1, n_X_tilde_new+ 1), SPE)
+#     matplotlib.title('主成分分析统计量SPE')
+#     matplotlib.xlabel('采样数')
+#     matplotlib.ylabel('SPE')
+# # 假设 X_new 是新的观测数据
+# print("处理新的测试样本。")
+# process_new_sample(testdata, P, Lambda_inv)
+# matplotlib.show()
 
