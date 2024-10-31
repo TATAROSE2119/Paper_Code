@@ -1,6 +1,5 @@
 import numpy as np
 import scipy.io
-from PyQt5.sip import array
 from sklearn.metrics import pairwise_distances
 from scipy.sparse import csr_matrix
 import matplotlib
@@ -16,7 +15,7 @@ data = list(data.values())[3:] # 将数据转换为列表
 # 分离训练数据和测试数据
 testdata = data[:22]  # 前22个元素作为测试数据
 train = np.array(data[22]) if len(data) > 22 else np.array(data[-1])  # 第23个元素作为训练数据，如果不存在则使用最后一个元素
-#train = train.T  # 转置训练数据
+train = train.T  # 转置训练数据
 
 # 计算训练数据的均值和标准差
 train_mean = np.mean(train, axis=0)  # 按列计算均值
