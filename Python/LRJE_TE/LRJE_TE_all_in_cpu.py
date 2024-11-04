@@ -192,7 +192,7 @@ print("协方差矩阵及其逆计算完成。")
 
 # 处理新样本
 #先计算两个测试数据
-testnum=2
+testnum=22
 for i in range(testnum):
     test=np.array(testdata[i])
     n=test.shape[0] # 获取新样本的行数
