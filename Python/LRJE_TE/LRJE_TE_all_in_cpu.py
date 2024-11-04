@@ -183,7 +183,7 @@ print("P 计算完成。")
 Y_train = P.T @ X_train_std  # 投影到特征空间
 print("训练数据投影到特征空间完成。")
 
-# 计算协方并矩阵的反，用于后续计算 T^2 统计量
+# 计算协方并矩阵的逆，用于后续计算 T^2 统计量
 Lambda = (Y_train @ Y_train.T) / (Y_train.shape[1] - 1)
 Lambda_inv = np.linalg.inv(Lambda)
 print("协方差矩阵及其逆计算完成。")
@@ -192,10 +192,11 @@ print("协方差矩阵及其逆计算完成。")
 for i in range(22):
     test=np.array(testdata[i])
     n=test.shape[0] # 获取新样本的行数
+    m=test.shape[1] # 获取新样本的列数
 
     test= (test -train_mean) / train_std  # 对新数据进行标准化
     for j in range(n): # 对每一行进行处理
-        y_new=P.T@test[j] # 投影到特征空间
+        y_new=P.T@test[j,:] # 投影到特征空间
 
 
 # def process_new_sample(X_new, P, Lambda_inv):
