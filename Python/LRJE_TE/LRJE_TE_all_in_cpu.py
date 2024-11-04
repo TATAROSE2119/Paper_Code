@@ -18,12 +18,12 @@ train = np.array(data[22]) if len(data) > 22 else np.array(data[-1])  # 第23个
 #train = train.T  # 转置训练数据
 
 # 计算训练数据的均值和标准差
-train_mean = np.mean(train, axis=0)  # 按列计算均值
-train_std = np.std(train, axis=0)  # 按列计算标准差
+train_mean = np.mean(train, axis=1)  # 按行计算均值
+train_std = np.std(train, axis=1)  # 按行计算标准差
 train_row, train_col = train.shape  # 获取训练数据的行数和列数
 print("训练数据的维度为：", train_row, train_col)
 #对数据进行标准化
-X_train_std = (train - train_mean) / train_std
+X_train_std = (train - train_mean[:, np.newaxis]) / train_std[:, np.newaxis]
 
 # 实现奇异值阈值化操作
 def singular_value_thresholding(A, tau):
@@ -190,7 +190,6 @@ Lambda = (Y_train @ Y_train.T) / (Y_train.shape[1] - 1)
 Lambda_inv = np.linalg.inv(Lambda)
 print("协方差矩阵及其逆计算完成。")
 
-
 # 处理新样本
 for i in range(22):
     test=np.array(testdata[i])
@@ -198,6 +197,9 @@ for i in range(22):
     m=test.shape[1] # 获取新样本的列数
 
     #test= (test -train_mean) / train_std  # 对新数据进行标准化
+    train_std = np.where(train_std == 0, 1, train_std)# 确保标准差非零
+    test = (test - train_mean.reshape(1, -1)) / train_std.reshape(1, -1)
+
     for j in range(n): # 对每一行进行处理
         y_new=P.T@test[j,:] # 投影到特征空间
 
