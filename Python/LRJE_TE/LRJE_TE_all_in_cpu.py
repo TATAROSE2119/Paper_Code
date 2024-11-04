@@ -191,11 +191,11 @@ print("协方差矩阵及其逆计算完成。")
 # 处理新样本
 for i in range(22):
     test=np.array(testdata[i])
-    n=test.shape[0]
+    n=test.shape[0] # 获取新样本的行数
 
-    test= (test -train_mean) / train_std
-    test=test.T
-    y_new=P.T@test
+    test= (test -train_mean) / train_std  # 对新数据进行标准化
+    for j in range(n): # 对每一行进行处理
+        y_new=P.T@test[j] # 投影到特征空间
 
 
 # def process_new_sample(X_new, P, Lambda_inv):
