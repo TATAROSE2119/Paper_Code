@@ -1,9 +1,9 @@
 import numpy as np
 import scipy.io
+from matplotlib import pyplot as plt
 from sklearn.metrics import pairwise_distances
 from scipy.sparse import csr_matrix
 import matplotlib
-
 # 设置字体以支持中文显示
 matplotlib.rcParams['font.sans-serif'] = ['SimHei']  # 使用黑体
 matplotlib.rcParams['axes.unicode_minus'] = False  # 解决负号显示问题
@@ -191,7 +191,9 @@ Lambda_inv = np.linalg.inv(Lambda)
 print("协方差矩阵及其逆计算完成。")
 
 # 处理新样本
-for i in range(22):
+#先计算两个测试数据
+testnum=2
+for i in range(testnum):
     test=np.array(testdata[i])
     n=test.shape[0] # 获取新样本的行数
     m=test.shape[1] # 获取新样本的列数
@@ -200,7 +202,35 @@ for i in range(22):
     train_std = np.where(train_std == 0, 1, train_std)# 确保标准差非零
     test = (test - train_mean.reshape(1, -1)) / train_std.reshape(1, -1)
 
+    T2_test = np.zeros(n)  # 初始化T2统计量数组
+    SPE_test = np.zeros(n)  # 初始化SPE统计量数组
+    I = np.eye(m)
+
     for j in range(n): # 对每一行进行处理
         y_new=P.T@test[j,:] # 投影到特征空间
+        T2_test[j] = y_new @ Lambda_inv @ y_new.T  # 计算 T² 统计量
 
+        x_res = (I - P@P.T) @ test[j, :]  # 计算残差空间的投影
+        SPE_test[j] = np.sum(np.square(x_res))  # 计算 SPE 统计量
+
+        # 绘制 T² 和 SPE 统计量的折线图
+    plt.figure(figsize=(14, 6))
+    plt.subplot(1, 2, 1)
+    plt.plot(T2_test, label='T2 Statistic')
+    plt.title(f'T2 Statistic for Test Set {i + 1}')
+    plt.xlabel('Sample index')
+    plt.ylabel('T2 Value')
+    plt.grid(True)
+    plt.legend()
+
+    plt.subplot(1, 2, 2)
+    plt.plot(SPE_test, label='SPE Statistic')
+    plt.title(f'SPE Statistic for Test Set {i + 1}')
+    plt.xlabel('Sample index')
+    plt.ylabel('SPE Value')
+    plt.grid(True)
+    plt.legend()
+
+    plt.tight_layout()
+    plt.show()
 
