@@ -57,7 +57,8 @@ def update_Z(X, E, Q, P, Y1, Y2, mu, beta):
     B = beta * X.T @ P @ P.T @ X + mu * X.T @ X - mu *X.T @ E + mu * Q + X.T @ Y1 - Y2
 
     # 解线性系统求解 Z
-    Z = np.linalg.solve(A, B)
+    # Z = np.linalg.solve(A, B)
+    Z=(np.linalg.inv(A))@B
     print("Z 更新完成。")
     return Z
 
@@ -113,9 +114,10 @@ def update_P(X, Z, L, beta, gamma):
     """
     使用特征值分解来更新 P
     """
-    n = X.shape[1]
-    I = np.eye(n)
-    G = (Z - I) @ (Z - I).T
+    n = X.shape[0]
+    m = X.shape[1]
+    I = np.eye(m)
+    G = (Z - I) @ ((Z - I).T)
     A = X @ (beta * G + gamma * L) @ X.T
 
     # 计算特征值和特征向量
@@ -123,7 +125,7 @@ def update_P(X, Z, L, beta, gamma):
 
     # 选取最大的特征值对应的特征向量
     idx = np.argsort(eigenvalues)[::-1]  # 降序排列特征值
-    P = eigenvectors[:, idx[:n]]  # 选取对应最大特征值的特征向量
+    P = eigenvectors[:, idx[:30]]  # 选取对应最大特征值的特征向量
     print("P 使用特征值分解更新完成。")
     return P
 
@@ -198,54 +200,4 @@ for i in range(22):
     for j in range(n): # 对每一行进行处理
         y_new=P.T@test[j,:] # 投影到特征空间
 
-
-# def process_new_sample(X_new, P, Lambda_inv):
-#     """
-#     处理新的样本，T^2 和 SPE 统计量
-#     """
-#     # 标准化新数据
-#     mean_X_new = np.mean(X_new, axis=0)
-#     std_X_new = np.std(X_new, axis=0)
-#     X_new_std = (X_new - mean_X_new) / std_X_new
-#     print(f"新数据标准化完成，使用新数据的平均值和标准差，标准化后的维度为：{X_new_std.shape}")
-#     # 投影到特征空间
-#     Y_new = P.T @ X_new_std
-#     print(f"新数据投影到特征空间完成，投影后的维度为：{Y_new.shape}")
-#     # 重构特征部分
-#     X_hat_new = P @ Y_new
-#     print(f"新数据的特征部分重构完成，重构后的维度为：{X_hat_new.shape}")
-#     # 残差部分
-#     X_tilde_new = X_new_std - X_hat_new
-#     print(f"新数据的残差部分计算完成，残差的维度为：{X_tilde_new.shape}")
-#
-#     # 计算 T^2 和 SPE 统计量
-#
-#     # T2
-#     n_y_new= Y_new.shape[0]
-#     T2 = np.zeros(n_y_new)
-#     for i in range(n_y_new):
-#         T2[i] = Y_new[i,:].T@Lambda_inv@Y_new[i,:]
-#     # 绘制 T^2 统计量的折线图
-#     matplotlib.figure(1)
-#     matplotlib.subplot(2, 1, 1)
-#     matplotlib.plot(range(1, n_y_new+ 1), T2)
-#     matplotlib.title('主成分分析统计量T2')
-#     matplotlib.xlabel('采样数')
-#     matplotlib.ylabel('T^2')
-#
-#     # SPE
-#     n_X_tilde_new= X_tilde_new.shape[0]
-#     SPE = np.zeros(n_X_tilde_new)
-#     for i in range(n_X_tilde_new):
-#         SPE[i] = np.sum(X_tilde_new[i,:]**2)
-#     # 绘制 SPE 统计量的折线图
-#     matplotlib.subplot(2, 1, 2)
-#     matplotlib.plot(range(1, n_X_tilde_new+ 1), SPE)
-#     matplotlib.title('主成分分析统计量SPE')
-#     matplotlib.xlabel('采样数')
-#     matplotlib.ylabel('SPE')
-# # 假设 X_new 是新的观测数据
-# print("处理新的测试样本。")
-# process_new_sample(testdata, P, Lambda_inv)
-# matplotlib.show()
 
