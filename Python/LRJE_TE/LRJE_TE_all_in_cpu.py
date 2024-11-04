@@ -15,7 +15,7 @@ data = list(data.values())[3:] # 将数据转换为列表
 # 分离训练数据和测试数据
 testdata = data[:22]  # 前22个元素作为测试数据
 train = np.array(data[22]) if len(data) > 22 else np.array(data[-1])  # 第23个元素作为训练数据，如果不存在则使用最后一个元素
-train = train.T  # 转置训练数据
+#train = train.T  # 转置训练数据
 
 # 计算训练数据的均值和标准差
 train_mean = np.mean(train, axis=0)  # 按列计算均值
@@ -190,13 +190,14 @@ Lambda = (Y_train @ Y_train.T) / (Y_train.shape[1] - 1)
 Lambda_inv = np.linalg.inv(Lambda)
 print("协方差矩阵及其逆计算完成。")
 
+
 # 处理新样本
 for i in range(22):
     test=np.array(testdata[i])
     n=test.shape[0] # 获取新样本的行数
     m=test.shape[1] # 获取新样本的列数
 
-    test= (test -train_mean) / train_std  # 对新数据进行标准化
+    #test= (test -train_mean) / train_std  # 对新数据进行标准化
     for j in range(n): # 对每一行进行处理
         y_new=P.T@test[j,:] # 投影到特征空间
 
