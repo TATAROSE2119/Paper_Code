@@ -4,6 +4,7 @@ from matplotlib import pyplot as plt
 from sklearn.metrics import pairwise_distances
 from scipy.sparse import csr_matrix
 import matplotlib
+from scipy.stats import gaussian_kde
 # 设置字体以支持中文显示
 matplotlib.rcParams['font.sans-serif'] = ['SimHei']  # 使用黑体
 matplotlib.rcParams['axes.unicode_minus'] = False  # 解决负号显示问题
@@ -13,9 +14,8 @@ data = scipy.io.loadmat('TE_data.mat')
 data = list(data.values())[3:] # 将数据转换为列表
 
 # 分离训练数据和测试数据
-testdata = data[:22]  # 前22个元素作为测试数据
 train = np.array(data[22]) if len(data) > 22 else np.array(data[-1])  # 第23个元素作为训练数据，如果不存在则使用最后一个元素
-#train = train.T  # 转置训练数据
+testdata = data[:22]  # 前22个元素作为测试数据
 
 # 计算训练数据的均值和标准差
 train_mean = np.mean(train, axis=1)  # 按行计算均值
@@ -190,6 +190,29 @@ Lambda = (Y_train @ Y_train.T) / (Y_train.shape[1] - 1)
 Lambda_inv = np.linalg.inv(Lambda)
 print("协方差矩阵及其逆计算完成。")
 
+# 计算训练数据的 T² 和 SPE 统计量
+n_train = X_train_std.shape[1]
+T2_train = np.zeros(n_train)
+SPE_train = np.zeros(n_train)
+I = np.eye(X_train_std.shape[0])
+
+for j in range(n_train):
+    y_train_new = P.T @ X_train_std[:, j]  # 投影到特征空间
+    T2_train[j] = y_train_new @ Lambda_inv @ y_train_new.T  # 计算 T² 统计量
+    x_residual = (I - P @ P.T) @ X_train_std[:, j]  # 计算残差空间的投影
+    SPE_train[j] = np.sum(np.square(x_residual))  # 计算 SPE 统计量
+
+# 使用核密度估计计算 T² 和 SPE 的控制限
+alpha = 0.99  # 置信水平
+
+# T² 控制限
+kde_T2 = gaussian_kde(T2_train)
+T2_limit = np.percentile(T2_train, alpha * 100)
+
+# SPE 控制限
+kde_SPE = gaussian_kde(SPE_train)
+SPE_limit = np.percentile(SPE_train, alpha * 100)
+
 # 处理新样本
 #先计算两个测试数据
 testnum=22
@@ -213,18 +236,23 @@ for i in range(testnum):
         x_res = (I - P@P.T) @ test[j, :]  # 计算残差空间的投影
         SPE_test[j] = np.sum(np.square(x_res))  # 计算 SPE 统计量
 
-        # 绘制 T² 和 SPE 统计量的折线图
+    # 绘制 T² 和 SPE 统计量的折线图
     plt.figure(figsize=(14, 6))
+
+    # 绘制 T² 统计量图
     plt.subplot(1, 2, 1)
     plt.plot(T2_test, label='T2 Statistic')
+    plt.axhline(y=T2_limit, color='r', linestyle='--', label=f'T2 Control Limit ({alpha * 100}%)')
     plt.title(f'T2 Statistic for Test Set {i + 1}')
     plt.xlabel('Sample index')
     plt.ylabel('T2 Value')
     plt.grid(True)
     plt.legend()
 
+    # 绘制 SPE 统计量图
     plt.subplot(1, 2, 2)
     plt.plot(SPE_test, label='SPE Statistic')
+    plt.axhline(y=SPE_limit, color='r', linestyle='--', label=f'SPE Control Limit ({alpha * 100}%)')
     plt.title(f'SPE Statistic for Test Set {i + 1}')
     plt.xlabel('Sample index')
     plt.ylabel('SPE Value')
@@ -233,4 +261,3 @@ for i in range(testnum):
 
     plt.tight_layout()
     plt.show()
-
