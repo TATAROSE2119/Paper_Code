@@ -1,8 +1,6 @@
 import numpy as np
 import scipy.io
 from matplotlib import pyplot as plt
-from sklearn.metrics import pairwise_distances
-from scipy.sparse import csr_matrix
 import matplotlib
 from scipy.stats import gaussian_kde
 import func
