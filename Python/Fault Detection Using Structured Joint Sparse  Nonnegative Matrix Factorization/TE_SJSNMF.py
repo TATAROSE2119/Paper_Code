@@ -1,8 +1,9 @@
 import numpy as np
-from scipy.linalg import eigh
+from scipy.linalg import eigh, inv
 import matplotlib
 from sklearn.metrics.pairwise import rbf_kernel
 from sklearn.neighbors import kneighbors_graph
+import matplotlib.pyplot as plt
 
 # 计算邻接矩阵（使用高斯核或K近邻）
 def compute_adjacency_matrix(X, method='rbf', gamma=0.5, n_neighbors=5):
@@ -16,15 +17,14 @@ def compute_adjacency_matrix(X, method='rbf', gamma=0.5, n_neighbors=5):
         raise ValueError("Method should be 'rbf' or 'knn'.")
     return A
 
-
 # 计算拉普拉斯矩阵
 def compute_laplacian_matrix(X, method='rbf', gamma=0.5, n_neighbors=5, laplacian_type='unnormalized'):
     # 计算邻接矩阵 A
-    X=X.T
+    X = X.T
     A = compute_adjacency_matrix(X, method=method, gamma=gamma, n_neighbors=n_neighbors)
 
     # 计算度矩阵 D
-    D = np.diag(np.sum(A, axis=1))# axis=1表示按行求和
+    D = np.diag(np.sum(A, axis=1))  # axis=1表示按行求和
 
     # 计算拉普拉斯矩阵
     if laplacian_type == 'unnormalized':
@@ -41,6 +41,7 @@ def compute_laplacian_matrix(X, method='rbf', gamma=0.5, n_neighbors=5, laplacia
         raise ValueError("Laplacian type should be 'unnormalized', 'normalized_sym', or 'normalized_rw'.")
 
     return L
+
 # 将拉普拉斯矩阵降维到 rank 维
 def reduce_laplacian_matrix(L, rank):
     # 进行特征值分解
@@ -59,7 +60,6 @@ def initialize_parameters(X, rank):
     B = np.random.rand(rank, X.shape[1])
     return W, H, U, Y, A, B
 
-
 # 行稀疏投影操作
 def row_sparse_projection(U_half, s):
     row_norms = np.linalg.norm(U_half, axis=1)  # 计算每行的 l2 范数
@@ -72,11 +72,10 @@ def row_sparse_projection(U_half, s):
         U_projected[top_s_indices, :] = U_half[top_s_indices, :]
         return U_projected
 
-
-def SJSNMF(X,L,rank,beta1,beta2,lam,s,max_iter,tol=1e-4):
+def SJSNMF(X, L, rank, beta1, beta2, lam, s, max_iter, tol=1e-4):
     W, H, U, Y, A, B = initialize_parameters(X, rank)
-    k=0
-    while k<max_iter:
+    k = 0
+    while k < max_iter:
         # 保存旧值以检查收敛性
         W_old, H_old = W.copy(), H.copy()
         # Step 1: 更新 W
@@ -97,22 +96,71 @@ def SJSNMF(X,L,rank,beta1,beta2,lam,s,max_iter,tol=1e-4):
         A = A - beta1 * (W @ H - Y)
         # Step 6: 更新 B
         B = B - beta2 * (H - U)
-        #检查收敛性
+        # 检查收敛性
         if np.linalg.norm(W - W_old) < tol and np.linalg.norm(H - H_old) < tol:
             break
-        k+= 1
+        k += 1
     return W, H
 
+# 计算重构矩阵 H 和 X
+# 根据公式(23)和(24)
+def reconstruct_H_and_X(W, X):
+    # 重构系数矩阵 H_hat
+    H_hat = inv(W.T @ W) @ W.T @ X
+    # 重构矩阵 X_hat
+    X_hat = W @ H_hat
+    return H_hat, X_hat
+
+# 计算 T2 和 SPE 统计量
+def calculate_statistics(X, X_hat, H_hat):
+    # 计算 T2 统计量
+    T2 = np.diag(H_hat.T @ H_hat)
+    # 计算 SPE 统计量
+    SPE = np.sum((X - X_hat) ** 2, axis=0)
+    return T2, SPE
+
+# 绘制 T2 和 SPE 统计量的变化趋势
+def plot_statistics(T2, SPE):
+    plt.figure()
+    plt.plot(T2, label='T^2 Statistic')
+    plt.xlabel('Sample Index')
+    plt.ylabel('T^2 Value')
+    plt.legend()
+    plt.title('T^2 Statistic Over Time')
+    plt.grid(True)
+    plt.show()
+
+    plt.figure()
+    plt.plot(SPE, label='SPE Statistic', color='red')
+    plt.xlabel('Sample Index')
+    plt.ylabel('SPE Value')
+    plt.legend()
+    plt.title('SPE Statistic Over Time')
+    plt.grid(True)
+    plt.show()
 
 # 设置字体以支持中文显示
-matplotlib.rcParams['font.sans-serif'] = ['SimHei']  # 使用黑体
+#matplotlib.rcParams['font.sans-serif'] = ['SimHei']  # 使用黑体
 matplotlib.rcParams['axes.unicode_minus'] = False  # 解决负号显示问题
-#加载训练集
-train_data=np.loadtxt('train_data/d01.dat')
-test_data=np.loadtxt('test_data/d01_te.dat')
-#对训练数据进行标准化
-train_data=(train_data-np.mean(train_data,axis=0))/np.std(train_data,axis=0) # axis=0表示按列进行操作
-#计算出拉普拉斯矩阵
-L=reduce_laplacian_matrix(compute_laplacian_matrix(train_data,method='rbf',gamma=0.5,n_neighbors=5),rank=20)
-#使用SJSNMF方法返回W，H
-W,H=SJSNMF(train_data,L=L, rank=20, beta1=0.1, beta2=0.1,lam=1,s=15,max_iter=100,tol=1e-4)
+
+# 加载训练集
+train_data = np.loadtxt('train_data/d01.dat')
+test_data = np.loadtxt('test_data/d01_te.dat')
+
+# 对训练数据进行标准化
+train_data = (train_data - np.mean(train_data, axis=0)) / np.std(train_data, axis=0)  # axis=0表示按列进行操作
+
+# 计算出拉普拉斯矩阵
+L = reduce_laplacian_matrix(compute_laplacian_matrix(train_data, method='rbf', gamma=0.5, n_neighbors=5), rank=20)
+
+# 使用 SJSNMF 方法返回 W 和 H
+W, H = SJSNMF(train_data, L=L, rank=20, beta1=0.1, beta2=0.1, lam=1, s=15, max_iter=100, tol=1e-4)
+
+# 计算重构矩阵 H_hat 和 X_hat
+H_hat, X_hat = reconstruct_H_and_X(W, train_data)
+
+# 计算 T2 和 SPE 统计量
+T2, SPE = calculate_statistics(train_data, X_hat, H_hat)
+
+# 绘制 T2 和 SPE 统计量的变化趋势
+plot_statistics(T2, SPE)
