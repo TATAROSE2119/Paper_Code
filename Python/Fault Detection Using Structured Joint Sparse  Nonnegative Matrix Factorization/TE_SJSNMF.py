@@ -146,21 +146,24 @@ matplotlib.rcParams['axes.unicode_minus'] = False  # 解决负号显示问题
 # 加载训练集
 train_data = np.loadtxt('train_data/d01.dat')
 test_data = np.loadtxt('test_data/d01_te.dat')
+#转置
+train_data = train_data.T
+test_data = test_data.T
 
-# 对训练数据进行标准化
-train_data = (train_data - np.mean(train_data, axis=0)) / np.std(train_data, axis=0)  # axis=0表示按列进行操作
+# 对训练数据进行标准化 NMF不用标准化
+#train_data = (train_data - np.mean(train_data, axis=0)) / np.std(train_data, axis=0)  # axis=0表示按列进行操作
 
 # 计算出拉普拉斯矩阵
 L = reduce_laplacian_matrix(compute_laplacian_matrix(train_data, method='rbf', gamma=0.5, n_neighbors=5), rank=20)
 
 # 使用 SJSNMF 方法返回 W 和 H
-W, H = SJSNMF(train_data, L=L, rank=20, beta1=0.1, beta2=0.1, lam=1, s=15, max_iter=100, tol=1e-4)
+W, H = SJSNMF(train_data, L=L, rank=20, beta1=0.1, beta2=0.1, lam=1, s=15, max_iter=20, tol=1e-4)
 
 # 计算重构矩阵 H_hat 和 X_hat
-H_hat, X_hat = reconstruct_H_and_X(W, train_data)
+H_hat, X_hat = reconstruct_H_and_X(W, test_data)
 
 # 计算 T2 和 SPE 统计量
-T2, SPE = calculate_statistics(train_data, X_hat, H_hat)
+T2, SPE = calculate_statistics(test_data, X_hat, H_hat)
 
 # 绘制 T2 和 SPE 统计量的变化趋势
 plot_statistics(T2, SPE)
