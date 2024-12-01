@@ -4,7 +4,7 @@ from sklearn.neighbors import kneighbors_graph
 from scipy.linalg import eigh
 
 
-def NPE(X, n_neighbors=5, n_components=2):
+def NPE(X, n_neighbors=7, n_components=2):
     """
     执行邻域保持嵌入算法。
     :param X: 输入数据，形状为 (样本数量, 特征维数)

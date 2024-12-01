@@ -42,13 +42,6 @@ def compute_laplacian_matrix(X, method='rbf', gamma=0.5, n_neighbors=5, laplacia
 
     return L
 
-# 将拉普拉斯矩阵降维到 rank 维
-def reduce_laplacian_matrix(L, rank):
-    # 进行特征值分解
-    eigenvalues, eigenvectors = eigh(L)
-    # 选择最小的 rank 个特征值对应的特征向量
-    L_reduced = eigenvectors[:, :rank].T @ L @ eigenvectors[:, :rank]
-    return L_reduced
 
 def initialize_parameters(X, rank):
     # 初始化矩阵 W, H, U, Y, A, B 为非负随机值
@@ -144,17 +137,16 @@ def plot_statistics(T2, SPE):
 matplotlib.rcParams['axes.unicode_minus'] = False  # 解决负号显示问题
 
 # 加载训练集
-train_data = np.loadtxt('train_data/d01.dat')
-test_data = np.loadtxt('test_data/d01_te.dat')
-#转置
-train_data = train_data.T
+train_data = np.loadtxt('../../TE_data/train_data/d01.dat')
+test_data = np.loadtxt('../../TE_data/test_data/d01_te.dat')
+
 test_data = test_data.T
 
 # 对训练数据进行标准化 NMF不用标准化
 #train_data = (train_data - np.mean(train_data, axis=0)) / np.std(train_data, axis=0)  # axis=0表示按列进行操作
 
 # 计算出拉普拉斯矩阵
-L = reduce_laplacian_matrix(compute_laplacian_matrix(train_data, method='rbf', gamma=0.5, n_neighbors=5), rank=20)
+L = compute_laplacian_matrix(train_data, method='knn', gamma=0.5, n_neighbors=5)
 
 # 使用 SJSNMF 方法返回 W 和 H
 W, H = SJSNMF(train_data, L=L, rank=20, beta1=0.1, beta2=0.1, lam=1, s=15, max_iter=20, tol=1e-4)
