@@ -67,7 +67,8 @@ def compute_weight_matrix(X, t, k=7):
     dists = pairwise_distances(X.T)
     # 创建k-近邻图
     np.fill_diagonal(dists, np.inf)
-    neighbors = np.argsort(dists, axis=1)[:, :k]
+
+    neighbors = np.argsort(dists, axis=1)[:, :k]# 选择前k个最近邻
 
     # 初始化权重矩阵
     W = np.zeros_like(dists)
