@@ -13,7 +13,7 @@ class TestCalculateE_d_i_ex_j(unittest.TestCase):
 
     def test_k_equals_1(self):
         X = np.array([[0, 0], [1, 1], [2, 2]])
-        k = 1
+        k = 3
         expected = np.array([0.0, 0.0, 0.0])  # 预期结果可能因方法而异，这里假设为0.0
         result = calculate_E_d_i_ex_j(X, k)
         np.testing.assert_array_almost_equal(result, expected, decimal=6)

@@ -82,4 +82,31 @@ def calculate_E_d_i_ex_j(X,k):
 
     return sde_E_d_i_ex_j
 
+def calculate_E_d_i_in_j(X,k):
+    """
+       计算所有样本对于其邻域样本的样本距离熵。
+       """
+    n_samples = X.shape[0]
+    sde_E_d_i_in_j = np.zeros(n_samples)
+
+    # 计算点间欧氏距离
+    dists = pairwise_distances(X)
+    # 为自身距离设置无穷大以避免自身成为最近邻
+    np.fill_diagonal(dists, np.inf)
+
+    # 选择前k个最近邻
+    neighbors = np.argsort(dists, axis=1)[:, :k]
+
+    for i in range(n_samples):
+        # 获取邻居索引
+        neighbors_i = neighbors[i]
+        # 计算邻居的距离概率
+        p_in = np.exp(-dists[i, neighbors_i])
+        p_in /= np.sum(p_in)
+        # 避免对数中的0值
+        p_in= np.clip(p_in, 1e-10, None)
+        # 计算样本距离熵
+        sde_E_d_i_in_j[i] = -np.sum(p_in * np.log(p_in))
+
+    return sde_E_d_i_in_j
 
